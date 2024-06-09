@@ -27,6 +27,35 @@ soup = BeautifulSoup(response.content, 'html.parser')
 datos = pd.read_json(soup.pre.contents[0])
 datos['Fecha de Compra'] = pd.to_datetime(datos['Fecha de Compra'],format='%d/%m/%Y')
 
+## Filtrando por región y por año
+
+regiones_dict = {'Bogotá':'Andina', 'Medellín':'Andina', 'Cali':'Pacífica', 'Pereira':'Andina','Barranquilla':'Caribe', 'Cartagena':'Caribe','Cúcuta':'Andina', 'Bucaramanga':'Andina', 'Riohacha':'Caribe', 'Santa Marta':'Caribe', 'Leticia':'Amazónica', 'Pasto':'Andina','Manizales':'Andina', 'Neiva':'Andina', 'Villavicencio':'Orinoquía', 'Armenia':'Andina', 'Soacha':'Andina','Valledupar':'Caribe', 'Inírida':'Amazónica'}
+
+datos['Región'] = datos['Lugar de Compra'].map(regiones_dict)
+datos['Año'] = datos['Fecha de Compra'].dt.year
+
+## Sidebar para la interacción con la API
+
+regiones = ['Colombia','Caribe','Andina','Pacífica','Orinoquía','Amazónica']
+
+st.sidebar.title('Filtro')
+region = st.sidebar.selectbox('Región',regiones)
+if region == 'Colombia':
+  datos = datos.loc[datos['Región'] != 'Colombia']
+else:
+  datos = datos.loc[datos['Región'] == region]
+
+todos_anos = st.sidebar.checkbox('Datos de todo el periodo',value=True)
+if todos_anos:
+  datos = datos
+else:
+  ano = st.sidebar.slider('Año',2020,2023)
+  datos = datos.loc[datos['Año'] == ano]
+
+filtro_vendedores = st.sidebar.multiselect('Vendedores',datos.Vendedor.unique())
+if filtro_vendedores:
+  datos = datos[datos['Vendedor'].isin(filtro_vendedores)]
+
 ## Creación de features
 
 fact_ciudades = datos.groupby('Lugar de Compra')[['Precio']].sum()
